@@ -272,20 +272,7 @@ class GroupedData protected[sql](
     aggregateNumericColumns(colNames: _*)(Average)
   }
 
-  /**
-    * Compute the mean value for each numeric columns for each group.
-    * The resulting [[DataFrame]] will also contain the grouping columns.
-    * When specified columns are given, only compute the mean values for them.
-    *
-    * @since 1.3.0
-    */
-  @scala.annotation.varargs
-  def onlineAvg(colNames: String*): DataFrame = {
 
-    var udaf = new OnlineAvg()
-    agg(udaf(df.col(colNames(0))).as("onlineAvg"))
-
-  }
 
   /**
     * Compute the min value for each numeric column for each group.
@@ -309,5 +296,45 @@ class GroupedData protected[sql](
   @scala.annotation.varargs
   def sum(colNames: String*): DataFrame = {
     aggregateNumericColumns(colNames: _*)(Sum)
+  }
+
+  /**
+    * Online Compute the mean value for each numeric columns for each group.
+    * The resulting [[DataFrame]] will contain the {result, confidence, errorBound}.
+    * When specified columns are given, only compute the mean values for them.
+    *
+    */
+  @scala.annotation.varargs
+  def onlineAvg(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+
+    var udaf = new OnlineAvg(confidence, errorBound)
+    agg(udaf(df.col(colNames(0))).as("onlineAvg"))
+
+  }
+
+  def onlineMax(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+
+    var udaf = new OnlineMax(confidence, errorBound)
+    agg(udaf(df.col(colNames(0))).as("onlineAvg"))
+
+  }
+
+  def onlineMin(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+
+    var udaf = new OnlineMin(confidence, errorBound)
+    agg(udaf(df.col(colNames(0))).as("onlineAvg"))
+
+  }
+  def onlineCount(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+
+    var udaf = new OnlineCount(confidence, errorBound)
+    agg(udaf(df.col(colNames(0))).as("onlineAvg"))
+
+  }
+  def onlineSum(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+
+    var udaf = new OnlineSum(confidence, errorBound)
+    agg(udaf(df.col(colNames(0))).as("onlineAvg"))
+
   }
 }
