@@ -118,18 +118,20 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
     updateHistorical()
 
     val T_n_2 = historicalVar
-    var realErrorBound: Double = errorBound
-    var realConfidence: Double = confidence
+    var localErrorBound: Double = errorBound
+    var localConfidence: Double = confidence
 
-    if (realErrorBound == -1) {
-      // calculate real error bound
-      realErrorBound = commonMath.calcErrorBound(realConfidence, crtCount, T_n_2)
-    }
-    if (realConfidence == -1) {
-      realConfidence = commonMath.calcConfidence(realErrorBound, crtCount, T_n_2)
+    val updateConfidence = if (confidence == -1) true else false
+
+    if (updateConfidence) {
+      localErrorBound = errorBound
+      localConfidence = commonMath.calcConfidence(localErrorBound, crtCount, T_n_2)
+    } else {
+      localConfidence = confidence
+      localErrorBound = commonMath.calcErrorBound(localConfidence, crtCount, T_n_2)
     }
 
-    s"runningResult=$sum%.2f\tP=$realConfidence\terrorBound=$realErrorBound".toString
+    s"runningResult=$sum\tP=$localConfidence\terrorBound=$localErrorBound".toString
   }
 
 
