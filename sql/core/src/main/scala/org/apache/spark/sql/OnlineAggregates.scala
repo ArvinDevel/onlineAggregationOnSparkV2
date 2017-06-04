@@ -270,11 +270,7 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
 
   // Intermediate Schema
   override def bufferSchema: StructType = {
-    var bufferStrcut = new StructType()
-    bufferStrcut.add("count", LongType)
-    bufferStrcut.add("sum", DoubleType)
-
-    bufferStrcut
+    new StructType().add("count", LongType).add("sum", DoubleType)
   }
 
   // Return type
@@ -356,3 +352,5 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
 }
 
 
+
+}
