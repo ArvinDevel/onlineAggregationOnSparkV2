@@ -282,7 +282,9 @@ class GroupedData protected[sql](
   @scala.annotation.varargs
   def onlineAvg(colNames: String*): DataFrame = {
 
-    df.sqlContext.udf.register("onlineAvg", OnlineAvg)
+    var udaf = new OnlineAvg()
+    agg(udaf(df.col(colNames(0))).as("onlineAvg"))
+
   }
 
   /**
