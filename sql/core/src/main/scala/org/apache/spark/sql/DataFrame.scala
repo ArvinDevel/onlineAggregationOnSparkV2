@@ -183,39 +183,39 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       aggregateFuncName match {
         case "avg" =>
           if (i % 2 == 0) {
-            groupedData.onlineAvg(confidence, -1d, aggregateField).show()
+            groupedData.onlineAvg(confidence, -1d, aggregateField).show(false)
           }
           else {
-            groupedData.onlineAvg(-1d, errorBound, aggregateField).show()
+            groupedData.onlineAvg(-1d, errorBound, aggregateField).show(false)
           }
 
         case "sum" =>
           if (i % 2 == 0) {
-            groupedData.onlineSum(confidence, -1d, aggregateField).show()
+            groupedData.onlineSum(confidence, -1d, aggregateField).show(false)
           }
           else {
-            groupedData.onlineSum(-1d, errorBound, aggregateField).show()
+            groupedData.onlineSum(-1d, errorBound, aggregateField).show(false)
           }
         case "count" =>
           if (i % 2 == 0) {
-            groupedData.onlineCount(confidence, -1d, aggregateField).show()
+            groupedData.onlineCount(confidence, -1d, aggregateField).show(false)
           }
           else {
-            groupedData.onlineCount(-1d, errorBound, aggregateField).show()
+            groupedData.onlineCount(-1d, errorBound, aggregateField).show(false)
           }
         case "min" =>
           if (i % 2 == 0) {
-            groupedData.onlineMin(confidence, -1d, aggregateField).show()
+            groupedData.onlineMin(confidence, -1d, aggregateField).show(false)
           }
           else {
-            groupedData.onlineMin(-1d, errorBound, aggregateField).show()
+            groupedData.onlineMin(-1d, errorBound, aggregateField).show(false)
           }
         case "max" =>
           if (i % 2 == 0) {
-            groupedData.onlineMax(confidence, -1d, aggregateField).show()
+            groupedData.onlineMax(confidence, -1d, aggregateField).show(false)
           }
           else {
-            groupedData.onlineMax(-1d, errorBound, aggregateField).show()
+            groupedData.onlineMax(-1d, errorBound, aggregateField).show(false)
           }
 
       }
