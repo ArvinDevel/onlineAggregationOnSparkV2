@@ -134,8 +134,8 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
 
 }
+class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: Double)
 
-class OnlineCount(confidence: Double, errorBound: Double, size: Long)
   extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)

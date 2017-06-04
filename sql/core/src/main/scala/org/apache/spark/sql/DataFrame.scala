@@ -112,9 +112,9 @@ private[sql] object DataFrame {
   */
 // TODO: Improve documentation.
 @Experimental
-class DataFrame private[sql](
-                              @transient val sqlContext: SQLContext,
-                              @DeveloperApi @transient val queryExecution: SQLContext#QueryExecution) extends Serializable {
+class DataFrame private[sql](@transient val sqlContext: SQLContext,
+                             @DeveloperApi @transient val queryExecution: SQLContext#QueryExecution)
+  extends Serializable {
 
   // Note for Spark contributors: if adding or updating any action in `DataFrame`, please make sure
   // you wrap it with `withNewExecutionId` if this actions doesn't call other action.
@@ -136,9 +136,10 @@ class DataFrame private[sql](
   }
 
   // begin of online agg
+
   // sample fraction, stride of sample increase, confidence internal, errorBound
-  var fraction: Double = _
-  var stride: Double = _
+  var fraction: Double = 0.01
+  var stride: Double = 0.1
   var confidence: Double = _
   var errorBound: Double = _
   var end_confidence: Double = _
@@ -168,7 +169,7 @@ class DataFrame private[sql](
     var i = 0
     while (fraction != 1 || (confidence == end_confidence && errorBound == end_errorBound)) {
       //scalastyle:off
-      println("sample percentage: " + fraction)
+      println("sample percentage: " + fraction + i*stride)
       // scalastyle:on
 
       val colNames: Seq[String] = groupByCol1 +: groupByCols
@@ -211,13 +212,89 @@ class DataFrame private[sql](
           else {
             groupedData.onlineMax(-1d, errorBound, aggregateField).show()
           }
+
       }
 
-
+    i += 1
 
     }
 
   }
+
+
+
+  /**
+    * A onlineAgg access point use case class
+    * @param groupByCol1       , groupby column name
+    * @param aggregateFuncName ,
+    *                          aggregate Function name,: avg,sum,count,max,min
+    * @param aggregateField, aggregate used field
+    * call example: df.onlineAggregate("avg","age","name")
+    * will calculate DataFrame df's avg of "age" field after groupby "name"
+    */
+  // todo cancel condition2, "GroupedData's syntax string as parameter"
+  // ("onlineAvg('columnName').show()")
+  def onlineAggregation(aggregateFuncName: String, aggregateField: String, groupByCol1: String,
+                      groupByCols: String*): Unit = {
+
+    // i%2 ==0 indicate confidence as parameter
+    var i = 0
+    while (fraction != 1 || (confidence == end_confidence && errorBound == end_errorBound)) {
+      //scalastyle:off
+      println("sample percentage: " + fraction + i*stride)
+      // scalastyle:on
+
+      val colNames: Seq[String] = groupByCol1 +: groupByCols
+      val groupedData = new GroupedData(this.sample(false, fraction = fraction),
+        colNames.map(colName => resolve(colName)), GroupedData.GroupByType)
+      aggregateFuncName match {
+        case "avg" =>
+          if (i%2 == 0) {
+            groupedData.onlineAvg(confidence, -1d, aggregateField).show()
+          }
+          else {
+            groupedData.onlineAvg(-1d, errorBound, aggregateField).show()
+          }
+
+        case "sum" =>
+          if (i%2 == 0) {
+            groupedData.onlineSum(confidence, -1d, aggregateField).show()
+          }
+          else {
+            groupedData.onlineSum(-1d, errorBound, aggregateField).show()
+          }
+        case "count" =>
+          if (i%2 == 0) {
+            groupedData.onlineCount(confidence, -1d, aggregateField).show()
+          }
+          else {
+            groupedData.onlineCount(-1d, errorBound, aggregateField).show()
+          }
+        case "min" =>
+          if (i%2 == 0) {
+            groupedData.onlineMin(confidence, -1d, aggregateField).show()
+          }
+          else {
+            groupedData.onlineMin(-1d, errorBound, aggregateField).show()
+          }
+        case "max" =>
+          if (i%2 == 0) {
+            groupedData.onlineMax(confidence, -1d, aggregateField).show()
+          }
+          else {
+            groupedData.onlineMax(-1d, errorBound, aggregateField).show()
+          }
+
+      }
+
+      i += 1
+
+    }
+
+  }
+
+
+
 
   @transient protected[sql] val logicalPlan: LogicalPlan = queryExecution.logical match {
     // For various commands (like DDL) and queries with side effects, we force query optimization to
