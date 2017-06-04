@@ -24,7 +24,117 @@ import scala.collection.mutable.ListBuffer
 // every impl class should use confidence and errorBound as parameter
 
 
-class OnlineSum(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineSum(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
+
+  private val batchSize = 100
+  private var batch = new ListBuffer[Double]()
+  private var batchPivot = 0
+  private var historicalAvg = 0d
+  private var historicalVar = 0d
+  private var crtCount = 0L
+  private var crtSum = 0d
+  private var tableSizeSqrt: Double = size // sqrt of the table
+
+  override def inputSchema: StructType = {
+    new StructType().add("myinput", DoubleType)
+  }
+
+  override def bufferSchema: StructType = {
+    new StructType().add("mycnt", LongType).add("mysum", DoubleType)
+  }
+
+  override def dataType: DataType = StringType
+
+
+  override def deterministic: Boolean = true
+
+  def updateHistorical(): Unit = {
+    val crtAvg = crtSum / crtCount
+
+    val batchAvg: Double = batch.sum / batch.length
+    val batchVar: Double = calcBatchVar()
+    val historicalCount = crtCount - batch.length
+
+    historicalVar = if (historicalCount == 0) batchVar
+    else (
+      historicalCount * (historicalVar + math.pow(crtAvg - historicalAvg, 2.0)) +
+        batchSize * (batchVar + math.pow(crtAvg - batchAvg, 2.0))
+      ) / (historicalCount + batchSize)
+
+    historicalAvg = if (historicalCount == 0) batchAvg
+    else (crtSum - batch.sum) / (crtCount - batch.length)
+  }
+
+  def calcBatchVar(): Double = {
+    var sampleSqrt : Double = batch.foldLeft(0d) { case (sum, sample) =>
+      sum + math.sqrt(sample.asInstanceOf[Double])
+    }
+    var sampleSumSqrt : Double = math.sqrt(batch.foldLeft(0d) { case (sum, sample) =>
+      sum + sample.asInstanceOf[Double]
+    } / batch.length)
+
+    var curBatchVar : Double = math.sqrt(tableSizeSqrt) * (sampleSqrt - sampleSumSqrt)
+
+    return curBatchVar
+  }
+
+
+  override def initialize(buffer: MutableAggregationBuffer): Unit = {
+
+    buffer.update(0, 0L)
+    buffer.update(1, 0d)
+  }
+
+
+  override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
+    buffer.update(0, buffer.getAs[Long](0) + 1)
+
+    buffer.update(1, buffer.getAs[Double](1) + input.getAs[Double](0))
+
+    crtCount = buffer.getAs[Long](0)
+
+    crtSum = buffer.getAs[Double](1)
+
+    if (batchPivot < batchSize) {
+      batch += input.getAs[Double](0)
+      batchPivot += 1
+    } else {
+      updateHistorical()
+      batch.clear()
+      batchPivot = 0
+    }
+  }
+
+  override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
+    buffer1.update(0, buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
+    buffer1.update(1, buffer1.getAs[Double](1) + buffer2.getAs[Double](1))
+
+  }
+
+  override def evaluate(buffer: Row): Any = {
+    val sum = buffer.getAs[Double](1)
+
+    updateHistorical()
+
+    val T = math.sqrt(historicalVar)
+    var realErrorBound: Double = errorBound
+    var realConfidence : Double = confidence
+
+    if(realErrorBound == -1){
+      // calculate real error bound
+    }
+    if(realConfidence == -1){
+      realConfidence = commonMath.calcConfidence(errorBound, crtCount, T)
+    }
+
+    s"runningResult=$sum%.2f\tP=$confidence\terrorBound=$errorBound".toString
+  }
+
+
+}
+class OnlineCount(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -65,7 +175,8 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long) extends User
 
 
 }
-class OnlineCount(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineMin(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -106,48 +217,8 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long) extends Us
 
 
 }
-class OnlineMin(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
-  override def inputSchema: StructType = {
-    new StructType().add("myinput", DoubleType)
-  }
-
-  override def bufferSchema: StructType = {
-    new StructType().add("mycnt", LongType).add("mysum", DoubleType)
-  }
-
-  override def dataType: DataType = StringType
-
-
-  override def deterministic: Boolean = true
-
-
-  override def initialize(buffer: MutableAggregationBuffer): Unit = {
-
-    buffer.update(0, 0L)
-    buffer.update(1, 0d)
-  }
-
-
-  override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-    buffer.update(0, buffer.getAs[Long](0) + 1)
-
-    buffer.update(1, buffer.getAs[Double](1) + input.getAs[Double](0))
-  }
-
-  override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-    buffer1.update(0, buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
-    buffer1.update(1, buffer1.getAs[Double](1) + buffer2.getAs[Double](1))
-
-  }
-
-  override def evaluate(buffer: Row): Any = {
-    val avg = buffer.getAs[Double](1) / buffer.getAs[Long](0)
-    s"$avg%.2f\tP=0.2\terrorBound=0.01".toString
-  }
-
-
-}
-class OnlineMax(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineMax(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -188,7 +259,8 @@ class OnlineMax(confidence: Double, errorBound: Double, size: Long) extends User
 
 }
 
-class OnlineAvg(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
 
   // Input Data Type Schema.
   // Assuming aggregate on single column, and its type is DoubleType.
