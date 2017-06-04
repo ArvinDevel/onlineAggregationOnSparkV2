@@ -306,34 +306,39 @@ class GroupedData protected[sql](
     */
   @scala.annotation.varargs
   def onlineAvg(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+    var size = 1000L
 
-    var udaf = new OnlineAvg(confidence, errorBound)
+    var udaf = new OnlineAvg(confidence, errorBound, size)
     agg(udaf(df.col(colNames(0))).as("onlineAvg"))
 
   }
 
   def onlineMax(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+    var size = 1000L
 
-    var udaf = new OnlineMax(confidence, errorBound)
+    var udaf = new OnlineMax(confidence, errorBound, size)
     agg(udaf(df.col(colNames(0))).as("onlineAvg"))
 
   }
 
   def onlineMin(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+    var size = 1000L
 
-    var udaf = new OnlineMin(confidence, errorBound)
+    var udaf = new OnlineMin(confidence, errorBound, size)
     agg(udaf(df.col(colNames(0))).as("onlineAvg"))
 
   }
   def onlineCount(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+    var size = 1000L
 
-    var udaf = new OnlineCount(confidence, errorBound)
+    var udaf = new OnlineCount(confidence, errorBound, size)
     agg(udaf(df.col(colNames(0))).as("onlineAvg"))
 
   }
   def onlineSum(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
 
-    var udaf = new OnlineSum(confidence, errorBound)
+    var size = 1000L
+    var udaf = new OnlineSum(confidence, errorBound, size)
     agg(udaf(df.col(colNames(0))).as("onlineAvg"))
 
   }
