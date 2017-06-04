@@ -18,16 +18,15 @@
 package org.apache.spark.sql
 
 import java.io.CharArrayWriter
+import java.util
 import java.util.Properties
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.util.control.NonFatal
-
 import com.fasterxml.jackson.core.JsonFactory
 import org.apache.commons.lang3.StringUtils
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.rdd.RDD
@@ -136,12 +135,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
   }
 
   // begin of online agg
-
-  // sample fraction, stride of sample increase, confidence internal, errorBound
-  var fraction: Double = 0.01
-  var stride: Double = 0.1
-  var confidence: Double = _
-  var errorBound: Double = _
+  // todo set end_confidence/errorBound use conf/confFile
   var end_confidence: Double = _
   var end_errorBound: Double = _
 
@@ -156,104 +150,39 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     * @param groupByCol1       , groupby column name
     * @param aggregateFuncName ,
     *                          aggregate Function name,: avg,sum,count,max,min
-    * @param aggregateField, aggregate used field
-    * call example: df.onlineAggregate("avg","age","name")
-    * will calculate DataFrame df's avg of "age" field after groupby "name"
+    * @param aggregateField    , aggregate used field
+    *                          call example: df.onlineAggregate("avg","age","name")
+    *                          will calculate DataFrame df's avg of "age" field after groupby "name"
     */
   // todo cancel condition2, "GroupedData's syntax string as parameter"
   // ("onlineAvg('columnName').show()")
   def onlineAggregate(aggregateFuncName: String, aggregateField: String, groupByCol1: String,
-                        groupByCols: String*): Unit = {
-
-    // i%2 ==0 indicate confidence as parameter
-    var i = 0
-    while (fraction != 1 || (confidence == end_confidence && errorBound == end_errorBound)) {
-      //scalastyle:off
-      println("sample percentage: " + fraction + i*stride)
-      // scalastyle:on
-
-      val colNames: Seq[String] = groupByCol1 +: groupByCols
-      val groupedData = new GroupedData(this.sample(false, fraction = fraction),
-        colNames.map(colName => resolve(colName)), GroupedData.GroupByType)
-      aggregateFuncName match {
-        case "avg" =>
-          if (i%2 == 0) {
-            groupedData.onlineAvg(confidence, -1d, aggregateField).show()
-          }
-          else {
-            groupedData.onlineAvg(-1d, errorBound, aggregateField).show()
-          }
-
-        case "sum" =>
-          if (i%2 == 0) {
-            groupedData.onlineSum(confidence, -1d, aggregateField).show()
-          }
-          else {
-            groupedData.onlineSum(-1d, errorBound, aggregateField).show()
-          }
-        case "count" =>
-          if (i%2 == 0) {
-            groupedData.onlineCount(confidence, -1d, aggregateField).show()
-          }
-          else {
-            groupedData.onlineCount(-1d, errorBound, aggregateField).show()
-          }
-        case "min" =>
-          if (i%2 == 0) {
-            groupedData.onlineMin(confidence, -1d, aggregateField).show()
-          }
-          else {
-            groupedData.onlineMin(-1d, errorBound, aggregateField).show()
-          }
-        case "max" =>
-          if (i%2 == 0) {
-            groupedData.onlineMax(confidence, -1d, aggregateField).show()
-          }
-          else {
-            groupedData.onlineMax(-1d, errorBound, aggregateField).show()
-          }
-
-      }
-
-    i += 1
-
-    }
-
-  }
-
-
-
-  /**
-    * A onlineAgg access point use case class
-    * @param groupByCol1       , groupby column name
-    * @param aggregateFuncName ,
-    *                          aggregate Function name,: avg,sum,count,max,min
-    * @param aggregateField, aggregate used field
-    * call example: df.onlineAggregate("avg","age","name")
-    * will calculate DataFrame df's avg of "age" field after groupby "name"
-    */
-  // todo cancel condition2, "GroupedData's syntax string as parameter"
-  // ("onlineAvg('columnName').show()")
-  def onlineAggregation(aggregateFuncName: String, aggregateField: String, groupByCol1: String,
                       groupByCols: String*): Unit = {
+    // build hashTable for aggre and it's info
+    // hashTable
+
+    // sample fraction, stride of sample increase, confidence internal, errorBound
+    // above all all agg function specific, so init in online function internal.
+    var fraction: Double = 0.01
+    var stride: Double = 0.1
+    var confidence: Double = 0.5
+    var errorBound: Double = 0.1
+
+    // var hashTable: util.HashMap[String, Array[Double]] = _
 
     // i%2 ==0 indicate confidence as parameter
     var i = 0
-    while (fraction != 1 || (confidence == end_confidence && errorBound == end_errorBound)) {
+    while (fraction < 1 || (confidence >= end_confidence && errorBound <= end_errorBound)) {
       //scalastyle:off
-      println("sample percentage: " + fraction + i*stride)
+      println("sample percentage: " + fraction)
       // scalastyle:on
 
       val colNames: Seq[String] = groupByCol1 +: groupByCols
-      val groupedData = new GroupedData(this.sample(false, fraction = fraction),
+      val groupedData = new GroupedData(this.sample(false, fraction),
         colNames.map(colName => resolve(colName)), GroupedData.GroupByType)
-      // construct a list of AggregateClass and trans to GroupedData
-      var seq = List[AggregateClass]()
-
-
       aggregateFuncName match {
         case "avg" =>
-          if (i%2 == 0) {
+          if (i % 2 == 0) {
             groupedData.onlineAvg(confidence, -1d, aggregateField).show()
           }
           else {
@@ -261,28 +190,28 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
           }
 
         case "sum" =>
-          if (i%2 == 0) {
+          if (i % 2 == 0) {
             groupedData.onlineSum(confidence, -1d, aggregateField).show()
           }
           else {
             groupedData.onlineSum(-1d, errorBound, aggregateField).show()
           }
         case "count" =>
-          if (i%2 == 0) {
+          if (i % 2 == 0) {
             groupedData.onlineCount(confidence, -1d, aggregateField).show()
           }
           else {
             groupedData.onlineCount(-1d, errorBound, aggregateField).show()
           }
         case "min" =>
-          if (i%2 == 0) {
+          if (i % 2 == 0) {
             groupedData.onlineMin(confidence, -1d, aggregateField).show()
           }
           else {
             groupedData.onlineMin(-1d, errorBound, aggregateField).show()
           }
         case "max" =>
-          if (i%2 == 0) {
+          if (i % 2 == 0) {
             groupedData.onlineMax(confidence, -1d, aggregateField).show()
           }
           else {
@@ -292,12 +221,23 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       }
 
       i += 1
+      fraction += stride
 
     }
 
   }
 
+  /**
+    * update online aggregate info, such as errorBound and confidence
+    *
+    * @param df
+    */
+  def updateInfo(df: DataFrame): Unit = {
+//    df.foreach {
+//
+//    }
 
+  }
 
 
   @transient protected[sql] val logicalPlan: LogicalPlan = queryExecution.logical match {

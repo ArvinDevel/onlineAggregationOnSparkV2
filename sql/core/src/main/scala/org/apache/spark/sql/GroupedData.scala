@@ -314,16 +314,18 @@ class GroupedData protected[sql](
 
   def onlineMax(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
     var size = 1000L
+    var fraction = 0.3
 
-    var udaf = new OnlineMax(confidence, errorBound, size)
+    var udaf = new OnlineMax(confidence, errorBound, size, fraction)
     agg(udaf(df.col(colNames(0))).as("onlineMax"))
 
   }
 
   def onlineMin(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
     var size = 1000L
+    var fraction = 0.3
 
-    var udaf = new OnlineMin(confidence, errorBound, size)
+    var udaf = new OnlineMin(confidence, errorBound, size, fraction)
     agg(udaf(df.col(colNames(0))).as("onlineMin"))
 
   }
@@ -354,21 +356,21 @@ class GroupedData protected[sql](
 
     var seq = List[Column]()
     aggs.foreach {
-      case onlineSum(confidence: Double, errorBound: Double, size: Long, col: String) =>
+      case SumOnline(confidence: Double, errorBound: Double, size: Long, col: String) =>
         var udaf = new OnlineSum(confidence, errorBound, size)
         seq :+ udaf(df.col(col)).as(s"onlineSum($col)")
-      case onlineCount(confidence: Double, errorBound: Double, size: Long,
+      case CountOnline(confidence: Double, errorBound: Double, size: Long,
       fraction: Double, col: String) =>
         var udaf = new OnlineCount(confidence, errorBound, size, fraction)
         seq :+ udaf(df.col(col)).as(s"onlineCount($col)")
-      case onlineAvg(confidence: Double, errorBound: Double, size: Long, col: String) =>
+      case AvgOnline(confidence: Double, errorBound: Double, size: Long, col: String) =>
         var udaf = new OnlineAvg(confidence, errorBound, size)
         seq :+ udaf(df.col(col)).as(s"onlineAvg($col)")
-      case onlineMin(confidence: Double, errorBound: Double, size: Long, col: String) =>
-        var udaf = new OnlineMin(confidence, errorBound, size)
+      case MinOnline(confidence: Double, errorBound: Double, size: Long, fraction, col: String) =>
+        var udaf = new OnlineMin(confidence, errorBound, size, fraction)
         seq :+ udaf(df.col(col)).as(s"onlineMin($col)")
-      case onlineMax(confidence: Double, errorBound: Double, size: Long, col: String) =>
-        var udaf = new OnlineMax(confidence, errorBound, size)
+      case MaxOnline(confidence: Double, errorBound: Double, size: Long, fraction, col: String) =>
+        var udaf = new OnlineMax(confidence, errorBound, size, fraction)
         seq :+ udaf(df.col(col)).as(s"onlineMax($col)")
 
     }
@@ -379,15 +381,16 @@ class GroupedData protected[sql](
 
 }
 
+
 abstract class AggregateClass
 // online operation to specific "col"
-case class onlineCount(confidence: Double, errorBound: Double, size: Long,
+case class CountOnline(confidence: Double, errorBound: Double, size: Long,
                        fraction: Double, col: String) extends AggregateClass
-case class onlineAvg(confidence: Double, errorBound: Double, size: Long, col: String)
+case class AvgOnline(confidence: Double, errorBound: Double, size: Long, col: String)
   extends AggregateClass
-case class onlineSum(confidence: Double, errorBound: Double, size: Long, col: String)
+case class SumOnline(confidence: Double, errorBound: Double, size: Long, col: String)
   extends AggregateClass
-case class onlineMax(confidence: Double, errorBound: Double, size: Long, col: String)
-  extends AggregateClass
-case class onlineMin(confidence: Double, errorBound: Double, size: Long, col: String)
-  extends AggregateClass
+case class MaxOnline(confidence: Double, errorBound: Double, size: Long,
+                     fraction: Double, col: String) extends AggregateClass
+case class MinOnline(confidence: Double, errorBound: Double, size: Long,
+                     fraction: Double, col: String) extends AggregateClass
