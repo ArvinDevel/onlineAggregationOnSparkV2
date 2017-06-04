@@ -32,11 +32,7 @@ class OnlineAvg() extends UserDefinedAggregateFunction {
 
   // Intermediate Schema
   override def bufferSchema: StructType = {
-    var bufferStrcut = new StructType()
-    bufferStrcut.add("count", LongType)
-    bufferStrcut.add("sum", DoubleType)
-
-    bufferStrcut
+    new StructType().add("count", LongType).add("sum", DoubleType)
   }
 
   // Return type
@@ -115,6 +111,4 @@ class OnlineAvg() extends UserDefinedAggregateFunction {
 
     s"runningResult=$avg\tP=$confidence\terrorBound=$errorBound".toString
   }
-
-
 }
