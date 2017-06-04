@@ -67,14 +67,14 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
   }
 
   def calcBatchVar(): Double = {
-    var sampleSqrt : Double = batch.foldLeft(0d) { case (sum, sample) =>
+    var sampleSqrt: Double = batch.foldLeft(0d) { case (sum, sample) =>
       sum + math.sqrt(sample.asInstanceOf[Double])
     }
-    var sampleSumSqrt : Double = math.sqrt(batch.foldLeft(0d) { case (sum, sample) =>
+    var sampleSumSqrt: Double = math.sqrt(batch.foldLeft(0d) { case (sum, sample) =>
       sum + sample.asInstanceOf[Double]
     } / batch.length)
 
-    var curBatchVar : Double = math.sqrt(tableSizeSqrt) * (sampleSqrt - sampleSumSqrt)
+    var curBatchVar: Double = math.sqrt(tableSizeSqrt) * (sampleSqrt - sampleSumSqrt)
 
     return curBatchVar
   }
@@ -119,12 +119,12 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
     val T = math.sqrt(historicalVar)
     var realErrorBound: Double = errorBound
-    var realConfidence : Double = confidence
+    var realConfidence: Double = confidence
 
-    if(realErrorBound == -1){
+    if (realErrorBound == -1) {
       // calculate real error bound
     }
-    if(realConfidence == -1){
+    if (realConfidence == -1) {
       realConfidence = commonMath.calcConfidence(errorBound, crtCount, T)
     }
 
@@ -133,6 +133,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
 
 }
+
 class OnlineCount(confidence: Double, errorBound: Double, size: Long)
   extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
@@ -175,6 +176,7 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long)
 
 
 }
+
 class OnlineMin(confidence: Double, errorBound: Double, size: Long)
   extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
@@ -217,6 +219,7 @@ class OnlineMin(confidence: Double, errorBound: Double, size: Long)
 
 
 }
+
 class OnlineMax(confidence: Double, errorBound: Double, size: Long)
   extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
