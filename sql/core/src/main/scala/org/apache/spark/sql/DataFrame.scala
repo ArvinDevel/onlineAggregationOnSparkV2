@@ -247,6 +247,10 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       val colNames: Seq[String] = groupByCol1 +: groupByCols
       val groupedData = new GroupedData(this.sample(false, fraction = fraction),
         colNames.map(colName => resolve(colName)), GroupedData.GroupByType)
+      // construct a list of AggregateClass and trans to GroupedData
+      var seq = List[AggregateClass]()
+
+
       aggregateFuncName match {
         case "avg" =>
           if (i%2 == 0) {

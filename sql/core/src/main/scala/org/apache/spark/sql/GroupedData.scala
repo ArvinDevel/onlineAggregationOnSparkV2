@@ -330,8 +330,8 @@ class GroupedData protected[sql](
 
   def onlineCount(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
     var size = 1000L
-
-    var udaf = new OnlineCount(confidence, errorBound, size)
+    var fraction = 0.3
+    var udaf = new OnlineCount(confidence, errorBound, size, fraction)
     agg(udaf(df.col(colNames(0))).as("onlineCount"))
 
   }
