@@ -24,7 +24,8 @@ import scala.collection.mutable.ListBuffer
 // every impl class should use confidence and errorBound as parameter
 
 
-class OnlineSum(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineSum(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -65,7 +66,8 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long) extends User
 
 
 }
-class OnlineCount(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: Double)
+  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -106,7 +108,8 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long) extends Us
 
 
 }
-class OnlineMin(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineMin(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -147,7 +150,8 @@ class OnlineMin(confidence: Double, errorBound: Double, size: Long) extends User
 
 
 }
-class OnlineMax(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineMax(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -188,7 +192,8 @@ class OnlineMax(confidence: Double, errorBound: Double, size: Long) extends User
 
 }
 
-class OnlineAvg(confidence: Double, errorBound: Double, size: Long) extends UserDefinedAggregateFunction {
+class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
+  extends UserDefinedAggregateFunction {
 
   // Input Data Type Schema.
   // Assuming aggregate on single column, and its type is DoubleType.
