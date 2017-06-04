@@ -304,7 +304,7 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
       ) / (historicalCount + batchSize)
 
     historicalAvg = if (historicalCount == 0) batchAvg
-    else (crtSum - batch.sum) / (crtCount - batch.length)
+    else crtAvg
   }
 
   def calcBatchVar(): Double = {
