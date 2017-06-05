@@ -136,8 +136,13 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
   // begin of online agg
   // todo set end_confidence/errorBound use conf/confFile
-  var end_confidence: Double = _
-  var end_errorBound: Double = _
+  var end_confidence: Double = 0.9
+  var end_errorBound: Double = 0.3
+
+  def setTermination(end_confidence: Double, end_errorBound: Double): Unit = {
+    this.end_confidence = end_confidence
+    this.end_errorBound = end_errorBound
+  }
 
   /**
     * A onlineAgg access point that can be canceled during execution.
@@ -165,7 +170,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     // above all all agg function specific, so init in online function internal.
     var fraction: Double = 0.01
     var stride: Double = 0.1
-    var confidence: Double = 0.5
+    var confidence: Double = 0.95
     var errorBound: Double = 0.1
 
     // var hashTable: util.HashMap[String, Array[Double]] = _
@@ -227,16 +232,43 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
   }
 
-  /**
-    * update online aggregate info, such as errorBound and confidence
-    *
-    * @param df
-    */
-  def updateInfo(df: DataFrame): Unit = {
-//    df.foreach {
-//
-//    }
 
+  /**
+    * update online aggregate info, according to field name
+    *
+    * @param df         the df contains the online agg info
+    * @param aggColumns column name after online agg, such as "o?C($col)"
+    *                   for Confidence or ErrorBound
+    */
+  def updateInfo(df: DataFrame, aggColumns: Seq[String]): Seq[Double] = {
+    // method1 use df.min agg function
+    val result = df.agg(aggColumns.map(col => (col, "min")).toMap).collect()(0)
+    result.toSeq.map(field => field.asInstanceOf[Double])
+
+    // var newErrorBound = df.agg(("filed", "min")
+
+  }
+
+  /**
+    * update a certain online aggregate info, such as errorBound and confidence
+    *
+    * @param df     the df contains the online agg info
+    * @param aggKey "aggOperation+field"
+    * @param index  the index of agg
+    */
+  def updateOnlineInfo(df: DataFrame, Confidence: Double, ErrorBound: Double,
+                       aggKey: String, index: Int): (Double, Double) = {
+    // method2, select min confidence, max error
+    var currentConfidence = Confidence
+    var currentErrorBound = ErrorBound
+    // calculate for one pair
+    df.map { row =>
+      currentConfidence = if (currentConfidence < row.getDouble(8 + index * 4)) currentConfidence
+      else row.getDouble(8 + index * 4)
+      currentErrorBound = if (currentErrorBound > row.getDouble(16 + index * 4)) currentErrorBound
+      else row.getDouble(16 + index * 4)
+    }
+    (currentConfidence, currentErrorBound)
   }
 
 
