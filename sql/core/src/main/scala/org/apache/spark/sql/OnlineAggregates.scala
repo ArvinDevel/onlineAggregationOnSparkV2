@@ -103,7 +103,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
   }
 
   def calcBatchVar(buffer: MutableAggregationBuffer): Double = {
-    val tablesize : Double = size
+    val tablesize : Long = size
     var columnSqrt : Double = 0d
     var columnSumSqrt : Double = 0d
     var batch = new Array[Double](2)
@@ -113,9 +113,6 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
     val actualLen = batch.size
     for (index <- 0 to (actualLen - 1)) {
       sum += batch(index)
-    }
-
-    for (index <- 0 to (actualLen - 1)) {
       columnSqrt += math.sqrt(batch(index))
     }
 
