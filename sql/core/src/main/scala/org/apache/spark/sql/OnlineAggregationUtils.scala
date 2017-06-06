@@ -91,6 +91,7 @@ object commonMath {
   def calcConfidence(errorBound: Double,
                      samplesCount: Long,
                      T_n_2: Double): Double = {
+
     2 * CNDF((errorBound * math.sqrt(samplesCount)) / math.sqrt(T_n_2)) - 1
   }
 

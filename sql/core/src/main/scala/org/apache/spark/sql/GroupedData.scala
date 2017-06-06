@@ -342,36 +342,38 @@ class GroupedData protected[sql](
 
     var size = 1000L
     var udaf = new OnlineSum(confidence, errorBound, size)
-    agg(udaf(df.col(colNames(0))).as("onlineSum"))
+    agg(udaf(df.col(colNames(0))).as(Seq("onlineSum")))
 
   }
 
   /**
     * accept a list of AggregateClass as agg input
-    *
+    * field naming specification after online Agg Operation:
+    * o?($col) as result, o?C($col) as Confidence,o?E($col) as ErrorBound
     * @param aggs AggregateClass of online funcs
     *
     */
+  // todo OnlineAggFun output multi/3 columns
   def onlineAgg(aggs: Seq[AggregateClass]): DataFrame = {
 
     var seq = List[Column]()
     aggs.foreach {
       case SumOnline(confidence: Double, errorBound: Double, size: Long, col: String) =>
         var udaf = new OnlineSum(confidence, errorBound, size)
-        seq :+ udaf(df.col(col)).as(s"onlineSum($col)")
+        seq :+ udaf(df.col(col)).as(Seq(s"oS($col)", s"oSC($col)", s"oSE($col)"))
       case CountOnline(confidence: Double, errorBound: Double, size: Long,
       fraction: Double, col: String) =>
         var udaf = new OnlineCount(confidence, errorBound, size, fraction)
-        seq :+ udaf(df.col(col)).as(s"onlineCount($col)")
+        seq :+ udaf(df.col(col)).as(Seq(s"oC($col)", s"oCC($col)", s"oCE($col)"))
       case AvgOnline(confidence: Double, errorBound: Double, size: Long, col: String) =>
         var udaf = new OnlineAvg(confidence, errorBound, size)
-        seq :+ udaf(df.col(col)).as(s"onlineAvg($col)")
+        seq :+ udaf(df.col(col)).as(Seq(s"oV($col)", s"oVC($col)", s"oVE($col)"))
       case MinOnline(confidence: Double, errorBound: Double, size: Long, fraction, col: String) =>
         var udaf = new OnlineMin(confidence, errorBound, size, fraction)
-        seq :+ udaf(df.col(col)).as(s"onlineMin($col)")
+        seq :+ udaf(df.col(col)).as(Seq(s"oMi($col)", s"oMiC($col)", s"oMiE($col)"))
       case MaxOnline(confidence: Double, errorBound: Double, size: Long, fraction, col: String) =>
         var udaf = new OnlineMax(confidence, errorBound, size, fraction)
-        seq :+ udaf(df.col(col)).as(s"onlineMax($col)")
+        seq :+ udaf(df.col(col)).as(Seq(s"oMa($col)", s"oMaC($col)", s"oMaE($col)"))
 
     }
 

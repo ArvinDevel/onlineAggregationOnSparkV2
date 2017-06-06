@@ -96,7 +96,6 @@
     <module>sql/hive</module>
     <module>unsafe</module>
     <module>assembly</module>
-    <module>examples</module>
     <module>repl</module>
     <module>launcher</module>
   </modules>
