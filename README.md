@@ -56,14 +56,39 @@ and Spark Streaming for stream processing.(换成中文)
 
 ### 运行示例：
 
+测试数据在项目根目录`testdata`下，共有三份测试数据:
+
+-   `testdata/employees.json`: 144条记录
+-   `testdata/people.json`: 126条记录
+-   `testdata/thads2013n.json`: 64535条记录
+
+
     scala> val df =  sqlContext.read.json("testdata/thads2013n.json")
 
     scala> df.setTermination(0.99,0.01)
 
-    scala> df.onlineAggregate("avg", "age", "name")
+    scala> df.onlineAggregate("avg", "L30", "ME")
 
-表示对`df`这个`DataFrame`对象调用`OnlineAggregation`，其中聚集操作为`average`，针对的字段是`“age”`，而`groupby`的字段是`“name”`
+表示对`df`这个`DataFrame`对象调用`OnlineAggregation`，其中聚集操作为`average`，针对的字段是`“L30”`，而`groupby`的字段是`“ME”`
 
 返回结果如下：
+
+    sample percentage: 0.21000000000000002
+    ['2',R=19025.303135888502	P=0.95	E=90.7413816246117]
+    ['3',R=17494.54676258993	P=0.95	E=133.33365869228615]
+    ['4',R=14347.854855923159	P=0.95	E=126.90695515940877]
+    ['5',R=14258.597709377236	P=0.95	E=102.78623383577974]
+    ['1',R=18033.55144404332	P=0.95	E=91.85072892606517]
+    ...
+    sample percentage: 0.41000000000000003
+    ['2',R=19074.593118996276	P=0.95	E=63.58036975492021]
+    ['3',R=17475.7177589852     P=0.95	E=92.82041219328019]
+    ['4',R=14248.431202600217	P=0.95	E=89.13609756304453]
+    ['5',R=14213.03611898017	P=0.95	E=68.83323159705088]
+    ['1',R=18129.572733500798	P=0.95	E=64.49776580974893]
+    ...
+    
+
+
 
 
