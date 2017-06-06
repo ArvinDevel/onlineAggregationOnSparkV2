@@ -305,6 +305,7 @@ class GroupedData protected[sql](
     */
   @scala.annotation.varargs
   def onlineAvg(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+    // size is unnecessary
     var size = 1000L
 
     var udaf = new OnlineAvg(confidence, errorBound, size)
@@ -312,37 +313,35 @@ class GroupedData protected[sql](
 
   }
 
-  def onlineMax(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
-    var size = 1000L
-    var fraction = 0.3
+  def onlineMax(confidence: Double, errorBound: Double,
+                size: Long, fraction: Double, colNames: String*): DataFrame = {
+
 
     var udaf = new OnlineMax(confidence, errorBound, size, fraction)
     agg(udaf(df.col(colNames(0))).as("onlineMax"))
 
   }
 
-  def onlineMin(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
-    var size = 1000L
-    var fraction = 0.3
+  def onlineMin(confidence: Double, errorBound: Double,
+                size: Long, fraction: Double, colNames: String*): DataFrame = {
 
     var udaf = new OnlineMin(confidence, errorBound, size, fraction)
     agg(udaf(df.col(colNames(0))).as("onlineMin"))
 
   }
 
-  def onlineCount(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
-    var size = 1000L
-    var fraction = 0.3
+  def onlineCount(confidence: Double, errorBound: Double,
+                  size: Long, fraction: Double, colNames: String*): DataFrame = {
     var udaf = new OnlineCount(confidence, errorBound, size, fraction)
     agg(udaf(df.col(colNames(0))).as("onlineCount"))
 
   }
 
-  def onlineSum(confidence: Double, errorBound: Double, colNames: String*): DataFrame = {
+  def onlineSum(confidence: Double, errorBound: Double,
+                size: Long, colNames: String*): DataFrame = {
 
-    var size = 1000L
     var udaf = new OnlineSum(confidence, errorBound, size)
-    agg(udaf(df.col(colNames(0))).as(Seq("onlineSum")))
+    agg(udaf(df.col(colNames(0))).as("onlineSum"))
 
   }
 
@@ -350,6 +349,7 @@ class GroupedData protected[sql](
     * accept a list of AggregateClass as agg input
     * field naming specification after online Agg Operation:
     * o?($col) as result, o?C($col) as Confidence,o?E($col) as ErrorBound
+    *
     * @param aggs AggregateClass of online funcs
     *
     */
@@ -385,14 +385,19 @@ class GroupedData protected[sql](
 
 
 abstract class AggregateClass
+
 // online operation to specific "col"
 case class CountOnline(confidence: Double, errorBound: Double, size: Long,
                        fraction: Double, col: String) extends AggregateClass
+
 case class AvgOnline(confidence: Double, errorBound: Double, size: Long, col: String)
   extends AggregateClass
+
 case class SumOnline(confidence: Double, errorBound: Double, size: Long, col: String)
   extends AggregateClass
+
 case class MaxOnline(confidence: Double, errorBound: Double, size: Long,
                      fraction: Double, col: String) extends AggregateClass
+
 case class MinOnline(confidence: Double, errorBound: Double, size: Long,
                      fraction: Double, col: String) extends AggregateClass

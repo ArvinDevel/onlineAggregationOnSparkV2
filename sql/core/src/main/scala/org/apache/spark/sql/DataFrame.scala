@@ -136,13 +136,16 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
   // begin of online agg
   // todo set end_confidence/errorBound use conf/confFile
-  var end_confidence: Double = 0.9
-  var end_errorBound: Double = 0.3
+  var end_confidence: Double = 0.99
+  var end_errorBound: Double = 0.01
 
   def setTermination(end_confidence: Double, end_errorBound: Double): Unit = {
     this.end_confidence = end_confidence
     this.end_errorBound = end_errorBound
   }
+
+  // a parameter to some agg
+  lazy val size = count()
 
   /**
     * A onlineAgg access point that can be canceled during execution.
@@ -170,9 +173,9 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     // above all all agg function specific, so init in online function internal.
     var fraction: Double = 0.01
     var stride: Double = 0.1
-    var confidence: Double = 0.95
-    var errorBound: Double = 0.1
-
+    var confidence: Double = 0.6
+    var errorBound: Double = 10
+    // todo change stride dynamically
     // var hashTable: util.HashMap[String, Array[Double]] = _
 
     // i%2 ==0 indicate confidence as parameter
@@ -188,47 +191,89 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       aggregateFuncName match {
         case "avg" =>
           if (i % 2 == 0) {
-            var df = groupedData.onlineAvg(confidence, -1d, aggregateField)// .show(false)
+            var df = groupedData.onlineAvg(confidence, -1d, aggregateField) // .show(false)
             //scalastyle:off
-            df.foreach(println)
+            println("before update confidence is " + confidence + " er: " + errorBound)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
+            println("after update confidence is " + confidence + " er: " + errorBound)
+
             // scalastyle:on
 
           }
           else {
-            var df = groupedData.onlineAvg(-1d, errorBound, aggregateField)// .show(false)
+            var df = groupedData.onlineAvg(-1d, errorBound, aggregateField) // .show(false)
             //scalastyle:off
-            df.foreach(println)
+            println("before update confidence is " + confidence + " er: " + errorBound)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
+            println("after update confidence is " + confidence + " er: " + errorBound)
+
             // scalastyle:on
           }
 
         case "sum" =>
           if (i % 2 == 0) {
-            groupedData.onlineSum(confidence, -1d, aggregateField).show(false)
+            var df = groupedData.onlineSum(confidence, -1d, size, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
+
+            //            groupedData.onlineSum(confidence, -1d, aggregateField).show(false)
           }
           else {
-            groupedData.onlineSum(-1d, errorBound, aggregateField).show(false)
+            var df = groupedData.onlineSum(-1d, errorBound, size, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
           }
         case "count" =>
           if (i % 2 == 0) {
-            groupedData.onlineCount(confidence, -1d, aggregateField).show(false)
+            var df = groupedData.onlineCount(confidence, -1d, size, fraction, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
+
           }
           else {
-            groupedData.onlineCount(-1d, errorBound, aggregateField).show(false)
+            var df = groupedData.onlineCount(-1d, errorBound, size, fraction, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
           }
         case "min" =>
           if (i % 2 == 0) {
-            groupedData.onlineMin(confidence, -1d, aggregateField).show(false)
+            var df = groupedData.onlineMin(confidence, -1d, size, fraction, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
           }
           else {
-            groupedData.onlineMin(-1d, errorBound, aggregateField).show(false)
+            var df = groupedData.onlineMin(-1d, errorBound, size, fraction, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
           }
         case "max" =>
           if (i % 2 == 0) {
-            groupedData.onlineMax(confidence, -1d, aggregateField).show(false)
+            var df = groupedData.onlineMax(confidence, -1d, size, fraction, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
           }
           else {
-            groupedData.onlineMax(-1d, errorBound, aggregateField).show(false)
+            var df = groupedData.onlineMax(-1d, errorBound, size, fraction, aggregateField)
+            val pair = upStatistic(df, confidence, errorBound)
+            confidence = pair._1
+            errorBound = pair._2
           }
+        case _ =>
+          // scalastyle:off
+          println("Invalid aggregate funs")
+        // scalastyle:on
+
 
       }
 
@@ -255,8 +300,40 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     // var newErrorBound = df.agg(("filed", "min")
 
   }
-  // todo for each row print get info
-  def showInfo(df: DataFrame){}
+
+  // todo print df schema head
+  def upStatistic(df: DataFrame, con: Double, err: Double): (Double, Double) = {
+    var currentConfidence = con
+    var currentErrorBound = err
+
+    //scalastyle:off
+    println("\n")
+    // scalastyle:on
+    df.foreach((row: Row) => {
+      var r: Array[String] = row.toString().split(",")
+      var numbers = r(r.length - 1).split("\\s+")
+      //scalastyle:off
+      val con1 = numbers(1).split("=")(1).toDouble
+      var err1 = numbers(2).split("=")(1)
+      val err2 = err1.substring(0, err1.length - 1).toDouble
+      //println("con1 is: " + con1 + " err: " + err2)
+      currentConfidence = if (currentConfidence < con1) currentConfidence else con1
+      //println("after compare con1 is: " + currentConfidence)
+
+      currentErrorBound = if (currentErrorBound > err2) currentErrorBound else err2
+      //println("after compare err is: " + currentErrorBound)
+
+      println(row)
+      // scalastyle:on
+    }
+    )
+    //scalastyle:off
+    //println("curr conf: " + currentConfidence + " err: " + currentErrorBound)
+    // scalastyle:on
+
+
+    (currentConfidence, currentErrorBound)
+  }
 
   /**
     * update a certain online aggregate info, such as errorBound and confidence
