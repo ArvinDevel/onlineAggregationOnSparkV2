@@ -232,7 +232,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
 class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: Double)
 
-  extends UserDefinedAggregateFunction {
+  extends UserDefinedAggregateFunction with Logging {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -293,6 +293,16 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: 
       var z_p = normalInv((1 + probility) / 2)
       interval = z_p * math.sqrt(deta / (size * fraction))
     }
+
+    var buffer0 = buffer.getAs[Long](0)
+    var buffer1 = buffer.getAs[Long](1)
+    var buffer2 = buffer.getAs[Long](2)
+    var buffer3 = buffer.getAs[Long](3)
+
+    logError(s"count is $buffer0")
+    logError(s"sum is $buffer1")
+    logError(s"square_sum is $buffer2")
+    logError(s"sum_square is $buffer3")
 
     s"${buffer.getAs[Long](0) / fraction}\tP=$probility\terrorBound=$interval".toString
   }
