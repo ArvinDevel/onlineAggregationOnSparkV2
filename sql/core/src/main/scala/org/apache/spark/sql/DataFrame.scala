@@ -301,7 +301,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
   }
 
-  // todo print df schema head
+  // todo print df schema head, replace print
   def upStatistic(df: DataFrame, con: Double, err: Double): (Double, Double) = {
     var currentConfidence = con
     var currentErrorBound = err
@@ -309,32 +309,61 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     //scalastyle:off
     println("\n")
     // scalastyle:on
-    df.foreach((row: Row) => {
-      var r: Array[String] = row.toString().split(",")
-      var numbers = r(r.length - 1).split("\\s+")
-      //scalastyle:off
-      val con1 = numbers(1).split("=")(1).toDouble
-      var err1 = numbers(2).split("=")(1)
-      val err2 = err1.substring(0, err1.length - 1).toDouble
-      //println("con1 is: " + con1 + " err: " + err2)
-      currentConfidence = if (currentConfidence < con1) currentConfidence else con1
-      //println("after compare con1 is: " + currentConfidence)
-
-      currentErrorBound = if (currentErrorBound > err2) currentErrorBound else err2
-      //println("after compare err is: " + currentErrorBound)
-
-      println(row)
-      // scalastyle:on
-    }
-    )
+    // Note spark is a distributed plateform, foreach is strange
+//    df.foreach((row: Row) => {
+//      var r: Array[String] = row.toString().split(",")
+//      var numbers = r(r.length - 1).split("\\s+")
+//      //scalastyle:off
+//      val con1 = numbers(1).split("=")(1).toDouble
+//      var err1 = numbers(2).split("=")(1)
+//      val err2 = err1.substring(0, err1.length - 1).toDouble
+//      //println("con1 is: " + con1 + " err: " + err2)
+//      currentConfidence = if (currentConfidence < con1) currentConfidence else con1
+//      //println("after compare con1 is: " + currentConfidence)
+//
+//      currentErrorBound = if (currentErrorBound > err2) currentErrorBound else err2
+//      //println("after compare err is: " + currentErrorBound)
+//
+//      println(row)
+//      // scalastyle:on
+//    }
+//    )
     //scalastyle:off
     //println("curr conf: " + currentConfidence + " err: " + currentErrorBound)
     // scalastyle:on
 
+    val conRdd = df.map((row: Row) => {
+//      println(row)
+//      var r: Array[String] = row.toString().split(",")
+//      var numbers = r(r.length - 1).split("\\s+")
+//      val con1 = numbers(1).split("=")(1).toDouble
+//      var err1 = numbers(2).split("=")(1)
+//      val err2 = err1.substring(0, err1.length - 1).toDouble
+//  new GenericRowWithSchema(Array(con1, err2),
+//  StructType(Array(StructField("confidence", DoubleType), StructField("error", DoubleType))))
+            var r: Array[String] = row.toString().split(",")
+            var numbers = r(r.length - 1).split("\\s+")
+            numbers(1).split("=")(1).toDouble
 
-    (currentConfidence, currentErrorBound)
+    })
+    val errRdd = df.map((row: Row) => {
+      //scalastyle:off
+      println(row)
+      // scalastyle:on
+      var r: Array[String] = row.toString().split(",")
+      var numbers = r(r.length - 1).split("\\s+")
+      var err1 = numbers(2).split("=")(1)
+      err1.substring(0, err1.length - 1).toDouble
+    })
+    //scalastyle:off
+    val conMin = conRdd.min()
+    val errMin = errRdd.min()
+//    println( conMin + " :con err: " + errMin )
+    // scalastyle:on
+
+    (if (currentConfidence < conMin) currentConfidence else conMin,
+      if (currentErrorBound > errMin) currentErrorBound else errMin)
   }
-
 
 
   /**
@@ -1549,7 +1578,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
     // TODO: Add stddev as an expression, and remove it from here.
     def stddevExpr(expr: Expression): Expression =
-      Sqrt(Subtract(Average(Multiply(expr, expr)), Multiply(Average(expr), Average(expr))))
+    Sqrt(Subtract(Average(Multiply(expr, expr)), Multiply(Average(expr), Average(expr))))
 
     // The list of summary statistics to compute, in the form of expressions.
     val statistics = List[(String, Expression => Expression)](
