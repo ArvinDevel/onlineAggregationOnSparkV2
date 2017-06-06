@@ -177,7 +177,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
     // i%2 ==0 indicate confidence as parameter
     var i = 0
-    while (fraction < 1 || (confidence >= end_confidence && errorBound <= end_errorBound)) {
+    while (fraction < 1 && (confidence <= end_confidence || errorBound >= end_errorBound)) {
       //scalastyle:off
       println("sample percentage: " + fraction)
       // scalastyle:on
@@ -188,10 +188,17 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       aggregateFuncName match {
         case "avg" =>
           if (i % 2 == 0) {
-            groupedData.onlineAvg(confidence, -1d, aggregateField).show(false)
+            var df = groupedData.onlineAvg(confidence, -1d, aggregateField)// .show(false)
+            //scalastyle:off
+            df.foreach(println)
+            // scalastyle:on
+
           }
           else {
-            groupedData.onlineAvg(-1d, errorBound, aggregateField).show(false)
+            var df = groupedData.onlineAvg(-1d, errorBound, aggregateField)// .show(false)
+            //scalastyle:off
+            df.foreach(println)
+            // scalastyle:on
           }
 
         case "sum" =>
@@ -248,6 +255,8 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     // var newErrorBound = df.agg(("filed", "min")
 
   }
+  // todo for each row print get info
+  def showInfo(df: DataFrame){}
 
   /**
     * update a certain online aggregate info, such as errorBound and confidence
