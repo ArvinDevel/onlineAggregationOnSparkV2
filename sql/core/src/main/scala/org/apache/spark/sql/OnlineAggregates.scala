@@ -56,8 +56,6 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
   override def deterministic: Boolean = true
 
-  val tablesize : Double = size
-
   def updateHistorical(buffer: MutableAggregationBuffer): Unit = {
     // get current avg from buffer
     val crtAvg = buffer.getAs[Double](1) / buffer.getAs[Long](0)
@@ -105,6 +103,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
   }
 
   def calcBatchVar(buffer: MutableAggregationBuffer): Double = {
+    val tablesize : Double = size
     var columnSqrt : Double = 0d
     var columnSumSqrt : Double = 0d
     var batch = new Array[Double](2)
