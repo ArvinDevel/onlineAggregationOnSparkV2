@@ -350,6 +350,7 @@ class GroupedData protected[sql](
     * accept a list of AggregateClass as agg input
     * field naming specification after online Agg Operation:
     * o?($col) as result, o?C($col) as Confidence,o?E($col) as ErrorBound
+    *
     * @param aggs AggregateClass of online funcs
     *
     */

@@ -106,9 +106,9 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
   }
 
   def calcBatchVar(buffer: MutableAggregationBuffer): Double = {
-    val tablesize : Double = size
-    var columnSqrt : Double = 0d
-    var columnSumSqrt : Double = 0d
+    val tablesize: Double = size
+    var columnSqrt: Double = 0d
+    var columnSumSqrt: Double = 0d
     var batch = new Array[Double](2)
     batch(0) = buffer.getAs[Double](7)
     batch(1) = buffer.getAs[Double](8)
@@ -238,7 +238,11 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: 
   }
 
   override def bufferSchema: StructType = {
-    new StructType().add("mycnt", LongType).add("mysum", DoubleType)
+    new StructType()
+      .add("mycnt", LongType)
+      .add("mysum", DoubleType)
+      .add("square_sum", DoubleType)
+      .add("sum_square", DoubleType)
   }
 
   override def dataType: DataType = StringType
@@ -251,47 +255,47 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: 
 
     buffer.update(0, 0L)
     buffer.update(1, 0d)
+    buffer.update(2, 0d)
+    buffer.update(3, 0d)
   }
-
-  private var square_sum : Double = 0d
-  private var sum_square : Double = 0d
-  private var probility : Double = 0d
-  private var interval : Double = 0d
-  private var deta : Double = 0d
 
   override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
     buffer.update(0, buffer.getAs[Long](0) + 1)
-
     buffer.update(1, buffer.getAs[Double](1) + 1)
-
-    sum_square = buffer.getAs[Long](0)
-    square_sum = square_sum + 1L
-
+    buffer.update(2, buffer.getAs[Double](2) + 1d)
+    buffer.update(3, buffer.getAs[Double](3) + 1d)
   }
 
   override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
     buffer1.update(0, buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
     buffer1.update(1, buffer1.getAs[Double](1) + buffer2.getAs[Double](1))
-
+    buffer1.update(2, buffer1.getAs[Double](2) + buffer2.getAs[Double](2))
+    buffer1.update(3, buffer1.getAs[Double](3) + buffer2.getAs[Double](3))
   }
 
   override def evaluate(buffer: Row): Any = {
+    var probility: Double = 0d
+    var interval: Double = 0d
+    var deta: Double = 0d
+
+    var square_sum = buffer.getAs[Double](2)
+    var sum_square = buffer.getAs[Double](3)
+
     deta = size * size * square_sum -
       size * size * sum_square *sum_square / size / fraction / size / fraction
     val updateConfidence = if (confidence == -1) true else false
 
     if (updateConfidence) {
       interval = errorBound
-      probility = interval * math.pow(size * fraction, 1/2) / math.pow(deta, 1/2) * 2 -1
+      probility = 2 * CNDF((interval * math.sqrt(size * fraction)) / math.sqrt(deta)) - 1
     } else {
       probility = confidence
-      interval = (1 + probility) / 2 * math.pow(math.pow(deta, 1/2) / (size * fraction), 1/2)
+      var z_p = normalInv((1 + probility) / 2)
+      interval = z_p * math.sqrt(deta / (size * fraction))
     }
 
     s"${ buffer.getAs[Long](0)/fraction}%.2f\tP=$probility\terrorBound=$interval".toString
   }
-
-
 }
 
 class OnlineMin(confidence: Double, errorBound: Double, size: Long, fraction: Double)
