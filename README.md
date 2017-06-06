@@ -46,11 +46,11 @@ and Spark Streaming for stream processing.(换成中文)
 
     def setTermination(end_confidence: Double, end_errorBound: Double): Unit
 
-该函数是`DataFrame`对象的方法，用户通过该函数设置终止的置信度和置信区间。
+该函数是`DataFrame`对象的方法，用户通过该函数设置终止的置信度和置信区间。
 
 #### 函数 onlineAggregate
 
-    def onlineAggregate(aggregateFuncName: String, aggregateField: String, groupByCol1: String,groupByCols: String*): Unit
+    def onlineAggregate(aggregateFuncName: String, aggregateField: String, groupByCol1: String,groupByCols: String*): Unit
 
 该函数作为`DataFrame`对象的`OnlineAggregation`的入口，第一个参数为聚集操作名称，包括平均，求和，计数，最小及最大（`avg`，`count`，`min`，`max`，`sum`）等，第二个参数为聚集操作针对的字段，后面的操作为分组字段，可以接受多个参数。
 
@@ -65,7 +65,7 @@ and Spark Streaming for stream processing.(换成中文)
 
     scala> val df =  sqlContext.read.json("testdata/thads2013n.json")
 
-    scala> df.setTermination(0.99,0.01)
+    scala> df.setTermination(0.99,0.01)
 
     scala> df.onlineAggregate("avg", "L30", "ME")
 
