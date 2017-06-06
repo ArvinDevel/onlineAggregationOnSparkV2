@@ -6,9 +6,11 @@ high-level APIs in Scala, Java, Python, and R, and an optimized engine that
 supports general computation graphs for data analysis. It also supports a
 rich set of higher-level tools including Spark SQL for SQL and DataFrames,
 MLlib for machine learning, GraphX for graph processing,
-and Spark Streaming for stream processing.(换成中文)
+and Spark Streaming for stream processing.
+Spark 是由 UC Berkeley 的 AMPLab 主导开发的基于内存计算的大数据处理框架，
+Spark SQL 作为其重要的组成部分，用于处理结构化数据
 
-我们在Spark源码(`V1.5.1`)上通过修改聚合算子(么司机补充)，实现了常见聚合函数(AVG, SUM, COUNT, MIN, MAX, STDVAR, VAR)的Online版本。
+我们在Spark源码(`V1.5.1`)上通过修改聚合算子，实现了常见聚合函数(AVG, SUM, COUNT, MIN, MAX, STDVAR, VAR)的Online版本。
 
 
 ### 对源码所修改的模块
