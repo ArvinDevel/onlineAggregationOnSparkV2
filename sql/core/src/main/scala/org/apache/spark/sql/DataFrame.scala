@@ -188,14 +188,14 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       aggregateFuncName match {
         case "avg" =>
           if (i % 2 == 0) {
-            var df = groupedData.onlineAvg(confidence, -1d, aggregateField)// .show(false)
+            var df = groupedData.onlineAvg(confidence, -1d, aggregateField) // .show(false)
             //scalastyle:off
             df.foreach(println)
             // scalastyle:on
 
           }
           else {
-            var df = groupedData.onlineAvg(-1d, errorBound, aggregateField)// .show(false)
+            var df = groupedData.onlineAvg(-1d, errorBound, aggregateField) // .show(false)
             //scalastyle:off
             df.foreach(println)
             // scalastyle:on
@@ -255,8 +255,9 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     // var newErrorBound = df.agg(("filed", "min")
 
   }
+
   // todo for each row print get info
-  def showInfo(df: DataFrame){}
+  def showInfo(df: DataFrame) {}
 
   /**
     * update a certain online aggregate info, such as errorBound and confidence
@@ -1315,6 +1316,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       val convert = CatalystTypeConverters.createToCatalystConverter(dataType)
       f(row(0).asInstanceOf[A]).map(o => InternalRow(convert(o)))
     }
+
     val generator = UserDefinedGenerator(elementTypes, rowFunction, apply(inputColumn).expr :: Nil)
 
     Generate(generator, join = true, outer = false,
@@ -1469,7 +1471,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
     // TODO: Add stddev as an expression, and remove it from here.
     def stddevExpr(expr: Expression): Expression =
-    Sqrt(Subtract(Average(Multiply(expr, expr)), Multiply(Average(expr), Average(expr))))
+      Sqrt(Subtract(Average(Multiply(expr, expr)), Multiply(Average(expr), Average(expr))))
 
     // The list of summary statistics to compute, in the form of expressions.
     val statistics = List[(String, Expression => Expression)](

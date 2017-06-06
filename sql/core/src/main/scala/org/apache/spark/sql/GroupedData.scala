@@ -128,10 +128,11 @@ class GroupedData protected[sql](
       case "sum" => Sum
       case "count" | "size" =>
         // Turn count(*) into count(1)
-        (inputExpr: Expression) => inputExpr match {
-          case s: Star => Count(Literal(1))
-          case _ => Count(inputExpr)
-        }
+        (inputExpr: Expression) =>
+          inputExpr match {
+            case s: Star => Count(Literal(1))
+            case _ => Count(inputExpr)
+          }
     }
   }
 
@@ -342,7 +343,7 @@ class GroupedData protected[sql](
 
     var size = 1000L
     var udaf = new OnlineSum(confidence, errorBound, size)
-    agg(udaf(df.col(colNames(0))).as(Seq("onlineSum")))
+    agg(udaf(df.col(colNames(0))).as("onlineSum"))
 
   }
 
@@ -386,14 +387,19 @@ class GroupedData protected[sql](
 
 
 abstract class AggregateClass
+
 // online operation to specific "col"
 case class CountOnline(confidence: Double, errorBound: Double, size: Long,
                        fraction: Double, col: String) extends AggregateClass
+
 case class AvgOnline(confidence: Double, errorBound: Double, size: Long, col: String)
   extends AggregateClass
+
 case class SumOnline(confidence: Double, errorBound: Double, size: Long, col: String)
   extends AggregateClass
+
 case class MaxOnline(confidence: Double, errorBound: Double, size: Long,
                      fraction: Double, col: String) extends AggregateClass
+
 case class MinOnline(confidence: Double, errorBound: Double, size: Long,
                      fraction: Double, col: String) extends AggregateClass
