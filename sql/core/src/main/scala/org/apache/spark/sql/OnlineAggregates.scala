@@ -113,6 +113,9 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
     val actualLen = batch.size
     for (index <- 0 to (actualLen - 1)) {
       sum += batch(index)
+    }
+
+    for (index <- 0 to (actualLen - 1)) {
       columnSqrt += math.sqrt(batch(index))
     }
 
@@ -140,6 +143,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
 
   override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
+    /*
     buffer.update(0, buffer.getAs[Long](0) + 1)
     buffer.update(1, buffer.getAs[Double](1) + input.getAs[Double](0))
 
@@ -174,9 +178,11 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
       buffer.update(8, batch_1)
       buffer.update(5, batchPivot)
     }
+    */
   }
 
   override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
+    /*
     buffer1.update(0, buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
     buffer1.update(1, buffer1.getAs[Double](1) + buffer2.getAs[Double](1))
     var buffer1_avg = buffer1.getAs[Double](1) / buffer1.getAs[Long](0)
@@ -191,6 +197,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
         buffer2.getAs[Long](0) * (buffer2_var + math.pow(total_avg - buffer2_avg, 2.0))
       ) / (buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
     buffer1.update(2, new_var)
+    */
   }
 
   override def evaluate(buffer: Row): Any = {
@@ -198,10 +205,13 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
     // updateHistorical(buffer)
 
+    /*
     var T_n_2 = buffer.getAs[Double](2)
+    */
     var localErrorBound: Double = 0d
     var localConfidence = 0d
 
+    /*
     val updateConfidence = if (confidence == -1) true else false
 
     if (updateConfidence) {
@@ -218,7 +228,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
     logError(s"sum is $sum")
     logError(s"localConfidence is $localConfidence")
     logError(s"errorBound is $localErrorBound")
-
+    */
     s"runningResult=$sum\tP=$localConfidence\terrorBound=$localErrorBound".toString
   }
 
@@ -463,7 +473,7 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
 
 
   override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-    /* buffer.update(0, buffer.getAs[Long](0) + 1)
+    buffer.update(0, buffer.getAs[Long](0) + 1)
     buffer.update(1, buffer.getAs[Double](1) + input.getAs[Double](0))
 
     var batchPivot = buffer.getAs[Int](5)
@@ -497,11 +507,10 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
       buffer.update(8, batch_1)
       buffer.update(5, batchPivot)
     }
-    */
   }
 
   override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-    /* buffer1.update(0, buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
+    buffer1.update(0, buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
     buffer1.update(1, buffer1.getAs[Double](1) + buffer2.getAs[Double](1))
     var buffer1_avg = buffer1.getAs[Double](1) / buffer1.getAs[Long](0)
     var buffer2_avg = buffer2.getAs[Double](1) / buffer2.getAs[Long](0)
@@ -515,7 +524,6 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
         buffer2.getAs[Long](0) * (buffer2_var + math.pow(total_avg - buffer2_avg, 2.0))
       ) / (buffer1.getAs[Long](0) + buffer2.getAs[Long](0))
     buffer1.update(2, new_var)
-    */
   }
 
   override def evaluate(buffer: Row): Any = {
@@ -523,11 +531,10 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
 
     // updateHistorical(buffer)
 
-    // var T_n_2 = buffer.getAs[Double](2)
+    var T_n_2 = buffer.getAs[Double](2)
     var localErrorBound: Double = 0d
     var localConfidence = 0d
 
-    /*
     val updateConfidence = if (confidence == -1) true else false
 
     if (updateConfidence) {
@@ -544,7 +551,6 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
     logError(s"avg is $avg")
     logError(s"localConfidence is $localConfidence")
     logError(s"errorBound is $localErrorBound")
-    */
 
     s"runningResult=$avg\tP=$localConfidence\terrorBound=$localErrorBound".toString
   }
