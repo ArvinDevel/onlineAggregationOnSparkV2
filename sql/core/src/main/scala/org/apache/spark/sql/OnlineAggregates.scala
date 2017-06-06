@@ -91,20 +91,6 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
     buffer.update(6, historicalAvg)
   }
 
-  def getActualLen(array: GenericArrayData): Int = {
-    var loop = new Breaks
-    var retVal = array.numElements() - 1
-    loop.breakable {
-      for (index <- 0 to (array.numElements() - 1)) {
-        if (array.array(index) == Double.MinValue) {
-          retVal = index
-          loop.break()
-        }
-      }
-    }
-    retVal
-  }
-
   def calcBatchVar(buffer: MutableAggregationBuffer): Double = {
     val tablesize: Double = size
     var columnSqrt: Double = 0d
@@ -124,9 +110,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
     columnSumSqrt = math.sqrt(sum)
 
-    var columnVar = math.sqrt(tablesize) * (columnSqrt - (columnSqrt / math.sqrt(actualLen)))
-
-    return columnVar
+    math.sqrt(tablesize) * (columnSqrt - (columnSqrt / math.sqrt(actualLen)))
   }
 
   // Initialize the Intermediate buffer
@@ -232,7 +216,7 @@ class OnlineSum(confidence: Double, errorBound: Double, size: Long)
 
 class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: Double)
 
-  extends UserDefinedAggregateFunction {
+  extends UserDefinedAggregateFunction with Logging {
   override def inputSchema: StructType = {
     new StructType().add("myinput", DoubleType)
   }
@@ -282,7 +266,7 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: 
     var sum_square = buffer.getAs[Double](3)
 
     deta = size * size * square_sum -
-      size * size * sum_square *sum_square / size / fraction / size / fraction
+      size * size * sum_square * sum_square / size / fraction / size / fraction
     val updateConfidence = if (confidence == -1) true else false
 
     if (updateConfidence) {
@@ -293,6 +277,10 @@ class OnlineCount(confidence: Double, errorBound: Double, size: Long, fraction: 
       var z_p = normalInv((1 + probility) / 2)
       interval = z_p * math.sqrt(deta / (size * fraction))
     }
+
+    logError(s"fraction is $fraction")
+    logError(s"size is $size")
+    logError(s"count in buffer is ${buffer.getAs[Long](0)}")
 
     s"${buffer.getAs[Long](0) / fraction}\tP=$probility\terrorBound=$interval".toString
   }
@@ -621,16 +609,16 @@ class OnlineMax(confidence: Double, errorBound: Double, size: Long, fraction: Do
     val batchAvg: Double = batch.sum / batch.length * filterFraction
     val batchAvg1: Double = batch_2.sum / batch_2.length * filterFraction
 
-    var sum : Double = 0d
-    var i : Int = 0
-    while (i < batch.length){
+    var sum: Double = 0d
+    var i: Int = 0
+    while (i < batch.length) {
       sum + (batch(i) - batchAvg) * (batch_2(i) - batchAvg1)
     }
     i = i + 1
     sum
   }
 
-  def update_T_n_n() : Unit = {
+  def update_T_n_n(): Unit = {
     val crtAvg = crtSum / crtCount * filterFraction
     val crtAvg1 = crtSum_2 / crtCount * filterFraction
 
@@ -662,7 +650,7 @@ class OnlineMax(confidence: Double, errorBound: Double, size: Long, fraction: Do
       batchPivot_2 = 0
     }
 
-    if (max <= input.getAs[Double](0)){
+    if (max <= input.getAs[Double](0)) {
       max = input.getAs[Double](0)
     }
   }
@@ -688,31 +676,35 @@ class OnlineMax(confidence: Double, errorBound: Double, size: Long, fraction: Do
     val Z_N_S = historicalVar
     val R_N_2 = crtSum / crtCount
     val R_N_1 = crtSum_2 / crtCount
-    val T_N_2_U = (crtCount*(1-filterFraction) +
-      (0-filterFraction)*sampleCount*(1-filterFraction))/crtCount*filterFraction
+    val T_N_2_U = (crtCount * (1 - filterFraction) +
+      (0 - filterFraction) * sampleCount * (1 - filterFraction)) / crtCount * filterFraction
 
-    T_N_1_1_UV2_U = (1 - filterFraction) * ( crtSum_2 - crtSum_2/crtCount*filterFraction*crtCount) +
-      (0-filterFraction)*((0-crtSum_2)/crtCount*filterFraction)*(sampleCount*(1-filterFraction))
+    T_N_1_1_UV2_U =
+      (1 - filterFraction) * (crtSum_2 - crtSum_2 / crtCount * filterFraction * crtCount) +
+        (0 - filterFraction) * ((0 - crtSum_2) /
+          crtCount * filterFraction) * (sampleCount * (1 - filterFraction))
 
-    T_N_1_1_UV_U = (1 - filterFraction) * ( crtSum - crtSum/crtCount*filterFraction*crtCount) +
-      (0-filterFraction)*((0-crtSum)/crtCount*filterFraction)*(sampleCount*(1-filterFraction))
+    T_N_1_1_UV_U =
+      (1 - filterFraction) * (crtSum - crtSum / crtCount * filterFraction * crtCount) +
+        (0 - filterFraction) *
+          ((0 - crtSum) / crtCount * filterFraction) * (sampleCount * (1 - filterFraction))
 
-    T_N_1_1_UV2_U = T_N_1_1_UV2_U/crtCount*filterFraction
-    T_N_1_1_UV_U = T_N_1_1_UV_U/crtCount*filterFraction
+    T_N_1_1_UV2_U = T_N_1_1_UV2_U / crtCount * filterFraction
+    T_N_1_1_UV_U = T_N_1_1_UV_U / crtCount * filterFraction
 
-    val G_N = historicalVar_2 - 4*R_N_2 * T_N_1_1_UV2_UV +
-      (4*R_N_2*R_N_2 - 2*R_N_1)*T_N_1_1_UV2_U +
-      4*R_N_2*R_N_2*historicalVar_3 +
-      (4*R_N_1*R_N_2-8*R_N_2*R_N_2*R_N_2)*T_N_1_1_UV_U +
-      math.pow((2*R_N_2*R_N_2-R_N_1), 2)*T_N_2_U
+    val G_N = historicalVar_2 - 4 * R_N_2 * T_N_1_1_UV2_UV +
+      (4 * R_N_2 * R_N_2 - 2 * R_N_1) * T_N_1_1_UV2_U +
+      4 * R_N_2 * R_N_2 * historicalVar_3 +
+      (4 * R_N_1 * R_N_2 - 8 * R_N_2 * R_N_2 * R_N_2) * T_N_1_1_UV_U +
+      math.pow((2 * R_N_2 * R_N_2 - R_N_1), 2) * T_N_2_U
 
-    localErrorBound1 = math.pow(Z_P*Z_P*historicalVar/crtCount, 1/2)
+    localErrorBound1 = math.pow(Z_P * Z_P * historicalVar / crtCount, 1 / 2)
 
     localErrorBound2 =
-      math.pow(Z_P*Z_P*G_N/crtCount*filterFraction/filterFraction/filterFraction, 1/2)
+      math.pow(Z_P * Z_P * G_N / crtCount * filterFraction / filterFraction / filterFraction, 1 / 2)
 
-    quantile = 1 - (historicalVar + localErrorBound2)/
-      (historicalVar + localErrorBound2 + math.pow(max - historicalAvg-localErrorBound1, 2))
+    quantile = 1 - (historicalVar + localErrorBound2) /
+      (historicalVar + localErrorBound2 + math.pow(max - historicalAvg - localErrorBound1, 2))
 
     s"$max\tP=$quantile\t$localErrorBound1".toString
   }
@@ -741,6 +733,7 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
       .add("batch_0", DoubleType) // need update
       .add("batch_1", DoubleType) // need update
   }
+
 
   // Return type
   override def dataType: DataType = StringType
@@ -777,20 +770,6 @@ class OnlineAvg(confidence: Double, errorBound: Double, size: Long)
 
     buffer.update(2, historicalVar)
     buffer.update(6, historicalAvg)
-  }
-
-  def getActualLen(array: GenericArrayData): Int = {
-    var loop = new Breaks
-    var retVal = array.numElements() - 1
-    loop.breakable {
-      for (index <- 0 to (array.numElements() - 1)) {
-        if (array.array(index) == Double.MinValue) {
-          retVal = index
-          loop.break()
-        }
-      }
-    }
-    retVal
   }
 
   def calcBatchVar(buffer: MutableAggregationBuffer): Double = {
@@ -1082,16 +1061,16 @@ class OnlineVar(confidence: Double, errorBound: Double, size: Long, fraction: Do
     val batchAvg: Double = batch.sum / batch.length * filterFraction
     val batchAvg1: Double = batch_2.sum / batch_2.length * filterFraction
 
-    var sum : Double = 0d
-    var i : Int = 0
-    while (i < batch.length){
+    var sum: Double = 0d
+    var i: Int = 0
+    while (i < batch.length) {
       sum + (batch(i) - batchAvg) * (batch_2(i) - batchAvg1)
     }
     i = i + 1
     sum
   }
 
-  def update_T_n_n() : Unit = {
+  def update_T_n_n(): Unit = {
     val crtAvg = crtSum / crtCount * filterFraction
     val crtAvg1 = crtSum_2 / crtCount * filterFraction
 
@@ -1143,34 +1122,42 @@ class OnlineVar(confidence: Double, errorBound: Double, size: Long, fraction: Do
     val Z_N_S = historicalVar
     val R_N_2 = crtSum / crtCount
     val R_N_1 = crtSum_2 / crtCount
-    val T_N_2_U = (crtCount*(1-filterFraction) +
-      (0-filterFraction)*sampleCount*(1-filterFraction))/crtCount*filterFraction
+    val T_N_2_U = (crtCount * (1 - filterFraction) +
+      (0 - filterFraction) * sampleCount * (1 - filterFraction)) / crtCount * filterFraction
 
-    T_N_1_1_UV2_U = (1 - filterFraction) * ( crtSum_2 - crtSum_2/crtCount*filterFraction*crtCount) +
-      (0-filterFraction)*((0-crtSum_2)/crtCount*filterFraction)*(sampleCount*(1-filterFraction))
+    T_N_1_1_UV2_U =
+      (1 - filterFraction) *
+        (crtSum_2 - crtSum_2 / crtCount * filterFraction * crtCount) +
+        (0 - filterFraction) *
+          ((0 - crtSum_2) / crtCount * filterFraction) * (sampleCount * (1 - filterFraction))
 
-    T_N_1_1_UV_U = (1 - filterFraction) * ( crtSum - crtSum/crtCount*filterFraction*crtCount) +
-      (0-filterFraction)*((0-crtSum)/crtCount*filterFraction)*(sampleCount*(1-filterFraction))
+    T_N_1_1_UV_U =
+      (1 - filterFraction) *
+        (crtSum - crtSum / crtCount * filterFraction * crtCount) +
+        (0 - filterFraction) *
+          ((0 - crtSum) / crtCount * filterFraction) * (sampleCount * (1 - filterFraction))
 
-    T_N_1_1_UV2_U = T_N_1_1_UV2_U/crtCount*filterFraction
-    T_N_1_1_UV_U = T_N_1_1_UV_U/crtCount*filterFraction
+    T_N_1_1_UV2_U = T_N_1_1_UV2_U / crtCount * filterFraction
+    T_N_1_1_UV_U = T_N_1_1_UV_U / crtCount * filterFraction
 
-    val G_N = historicalVar_2 - 4*R_N_2 * T_N_1_1_UV2_UV +
-      (4*R_N_2*R_N_2 - 2*R_N_1)*T_N_1_1_UV2_U +
-      4*R_N_2*R_N_2*historicalVar_3 +
-      (4*R_N_1*R_N_2-8*R_N_2*R_N_2*R_N_2)*T_N_1_1_UV_U +
-      math.pow((2*R_N_2*R_N_2-R_N_1), 2)*T_N_2_U
+    val G_N = historicalVar_2 - 4 * R_N_2 * T_N_1_1_UV2_UV +
+      (4 * R_N_2 * R_N_2 - 2 * R_N_1) * T_N_1_1_UV2_U +
+      4 * R_N_2 * R_N_2 * historicalVar_3 +
+      (4 * R_N_1 * R_N_2 - 8 * R_N_2 * R_N_2 * R_N_2) * T_N_1_1_UV_U +
+      math.pow((2 * R_N_2 * R_N_2 - R_N_1), 2) * T_N_2_U
 
     val updateConfidence = if (confidence == -1) true else false
 
     if (updateConfidence) {
       localErrorBound2 = errorBound
       confidence_1 = CNDF(
-        math.pow(localErrorBound2*crtCount/filterFraction*filterFraction*filterFraction/G_N, 1/2))
+        math.pow(localErrorBound2 *
+          crtCount / filterFraction * filterFraction * filterFraction / G_N, 1 / 2))
     } else {
       confidence_1 = confidence
       localErrorBound2 =
-        math.pow(Z_P*Z_P*G_N/crtCount*filterFraction/filterFraction/filterFraction, 1/2)
+        math.pow(Z_P * Z_P * G_N
+          / crtCount * filterFraction / filterFraction / filterFraction, 1 / 2)
     }
 
     s"$historicalVar%.2f\tP=$confidence_1\terrorBound=$localErrorBound2".toString
