@@ -17,7 +17,8 @@ object commonMath {
       * k + 0.319381530) * k
     y = 1.0 - 0.398942280401 * Math.exp(-0.5 * mX * mX) * y
 
-    (1d - neg) * y + neg * (1d - y)
+    val retP = (1d - neg) * y + neg * (1d - y)
+    if (retP > 1) 1 else retP
   }
 
   /**

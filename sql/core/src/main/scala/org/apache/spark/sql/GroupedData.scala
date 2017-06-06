@@ -128,10 +128,11 @@ class GroupedData protected[sql](
       case "sum" => Sum
       case "count" | "size" =>
         // Turn count(*) into count(1)
-        (inputExpr: Expression) => inputExpr match {
-          case s: Star => Count(Literal(1))
-          case _ => Count(inputExpr)
-        }
+        (inputExpr: Expression) =>
+          inputExpr match {
+            case s: Star => Count(Literal(1))
+            case _ => Count(inputExpr)
+          }
     }
   }
 

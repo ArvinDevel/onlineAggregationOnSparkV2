@@ -193,11 +193,11 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
           if (i % 2 == 0) {
             var df = groupedData.onlineAvg(confidence, -1d, aggregateField) // .show(false)
             //scalastyle:off
-            println("before update confidence is " + confidence + " er: " + errorBound)
+            //println("before update confidence is " + confidence + " er: " + errorBound)
             val pair = upStatistic(df, confidence, errorBound)
             confidence = pair._1
             errorBound = pair._2
-            println("after update confidence is " + confidence + " er: " + errorBound)
+            //println("after update confidence is " + confidence + " er: " + errorBound)
 
             // scalastyle:on
 
@@ -205,11 +205,11 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
           else {
             var df = groupedData.onlineAvg(-1d, errorBound, aggregateField) // .show(false)
             //scalastyle:off
-            println("before update confidence is " + confidence + " er: " + errorBound)
+            //println("before update confidence is " + confidence + " er: " + errorBound)
             val pair = upStatistic(df, confidence, errorBound)
             confidence = pair._1
             errorBound = pair._2
-            println("after update confidence is " + confidence + " er: " + errorBound)
+            //println("after update confidence is " + confidence + " er: " + errorBound)
 
             // scalastyle:on
           }
@@ -334,6 +334,8 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
     (currentConfidence, currentErrorBound)
   }
+
+
 
   /**
     * update a certain online aggregate info, such as errorBound and confidence
@@ -1392,6 +1394,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
       val convert = CatalystTypeConverters.createToCatalystConverter(dataType)
       f(row(0).asInstanceOf[A]).map(o => InternalRow(convert(o)))
     }
+
     val generator = UserDefinedGenerator(elementTypes, rowFunction, apply(inputColumn).expr :: Nil)
 
     Generate(generator, join = true, outer = false,
@@ -1546,7 +1549,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
 
     // TODO: Add stddev as an expression, and remove it from here.
     def stddevExpr(expr: Expression): Expression =
-    Sqrt(Subtract(Average(Multiply(expr, expr)), Multiply(Average(expr), Average(expr))))
+      Sqrt(Subtract(Average(Multiply(expr, expr)), Multiply(Average(expr), Average(expr))))
 
     // The list of summary statistics to compute, in the form of expressions.
     val statistics = List[(String, Expression => Expression)](
