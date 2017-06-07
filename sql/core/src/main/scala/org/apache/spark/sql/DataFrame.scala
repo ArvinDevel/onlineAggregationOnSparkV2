@@ -44,6 +44,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 
+import scala.util.Random
+
 
 private[sql] object DataFrame {
   def apply(sqlContext: SQLContext, logicalPlan: LogicalPlan): DataFrame = {
@@ -175,6 +177,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     var stride: Double = 0.1
     var confidence: Double = 0.6
     var errorBound: Double = 10
+    var STRIDE = 0.05
     // todo change stride dynamically
     // var hashTable: util.HashMap[String, Array[Double]] = _
 
@@ -195,8 +198,8 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
             //scalastyle:off
             //println("before update confidence is " + confidence + " er: " + errorBound)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) pair._1 + Random.nextDouble() * STRIDE else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) pair._2 - Random.nextDouble() * STRIDE else 0.01
             //println("after update confidence is " + confidence + " er: " + errorBound)
 
             // scalastyle:on
@@ -205,11 +208,15 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
           else {
             var df = groupedData.onlineAvg(-1d, errorBound, aggregateField) // .show(false)
             //scalastyle:off
-            //println("before update confidence is " + confidence + " er: " + errorBound)
+            // println("before update confidence is " + confidence + " er: " + errorBound)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
-            //println("after update confidence is " + confidence + " er: " + errorBound)
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
+            // println("after update confidence is " + confidence + " er: " + errorBound)
 
             // scalastyle:on
           }
@@ -218,56 +225,88 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
           if (i % 2 == 0) {
             var df = groupedData.onlineSum(confidence, -1d, size, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
 
             //            groupedData.onlineSum(confidence, -1d, aggregateField).show(false)
           }
           else {
             var df = groupedData.onlineSum(-1d, errorBound, size, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
           }
         case "count" =>
           if (i % 2 == 0) {
             var df = groupedData.onlineCount(confidence, -1d, size, fraction, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
 
           }
           else {
             var df = groupedData.onlineCount(-1d, errorBound, size, fraction, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
           }
         case "min" =>
           if (i % 2 == 0) {
             var df = groupedData.onlineMin(confidence, -1d, size, fraction, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
           }
           else {
             var df = groupedData.onlineMin(-1d, errorBound, size, fraction, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
           }
         case "max" =>
           if (i % 2 == 0) {
             var df = groupedData.onlineMax(confidence, -1d, size, fraction, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
           }
           else {
             var df = groupedData.onlineMax(-1d, errorBound, size, fraction, aggregateField)
             val pair = upStatistic(df, confidence, errorBound)
-            confidence = pair._1
-            errorBound = pair._2
+            confidence = if (pair._1 + Random.nextDouble() * STRIDE < 1) {
+              pair._1 + Random.nextDouble() * STRIDE
+            } else 0.98
+            errorBound = if (pair._2 - Random.nextDouble() * STRIDE > 0) {
+              pair._2 - Random.nextDouble() * STRIDE
+            } else 0.01
           }
         case _ =>
           // scalastyle:off
@@ -310,40 +349,40 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     println("\n")
     // scalastyle:on
     // Note spark is a distributed plateform, foreach is strange
-//    df.foreach((row: Row) => {
-//      var r: Array[String] = row.toString().split(",")
-//      var numbers = r(r.length - 1).split("\\s+")
-//      //scalastyle:off
-//      val con1 = numbers(1).split("=")(1).toDouble
-//      var err1 = numbers(2).split("=")(1)
-//      val err2 = err1.substring(0, err1.length - 1).toDouble
-//      //println("con1 is: " + con1 + " err: " + err2)
-//      currentConfidence = if (currentConfidence < con1) currentConfidence else con1
-//      //println("after compare con1 is: " + currentConfidence)
-//
-//      currentErrorBound = if (currentErrorBound > err2) currentErrorBound else err2
-//      //println("after compare err is: " + currentErrorBound)
-//
-//      println(row)
-//      // scalastyle:on
-//    }
-//    )
+    //    df.foreach((row: Row) => {
+    //      var r: Array[String] = row.toString().split(",")
+    //      var numbers = r(r.length - 1).split("\\s+")
+    //      //scalastyle:off
+    //      val con1 = numbers(1).split("=")(1).toDouble
+    //      var err1 = numbers(2).split("=")(1)
+    //      val err2 = err1.substring(0, err1.length - 1).toDouble
+    //      //println("con1 is: " + con1 + " err: " + err2)
+    //      currentConfidence = if (currentConfidence < con1) currentConfidence else con1
+    //      //println("after compare con1 is: " + currentConfidence)
+    //
+    //      currentErrorBound = if (currentErrorBound > err2) currentErrorBound else err2
+    //      //println("after compare err is: " + currentErrorBound)
+    //
+    //      println(row)
+    //      // scalastyle:on
+    //    }
+    //    )
     //scalastyle:off
     //println("curr conf: " + currentConfidence + " err: " + currentErrorBound)
     // scalastyle:on
 
     val conRdd = df.map((row: Row) => {
-//      println(row)
-//      var r: Array[String] = row.toString().split(",")
-//      var numbers = r(r.length - 1).split("\\s+")
-//      val con1 = numbers(1).split("=")(1).toDouble
-//      var err1 = numbers(2).split("=")(1)
-//      val err2 = err1.substring(0, err1.length - 1).toDouble
-//  new GenericRowWithSchema(Array(con1, err2),
-//  StructType(Array(StructField("confidence", DoubleType), StructField("error", DoubleType))))
-            var r: Array[String] = row.toString().split(",")
-            var numbers = r(r.length - 1).split("\\s+")
-            numbers(1).split("=")(1).toDouble
+      //      println(row)
+      //      var r: Array[String] = row.toString().split(",")
+      //      var numbers = r(r.length - 1).split("\\s+")
+      //      val con1 = numbers(1).split("=")(1).toDouble
+      //      var err1 = numbers(2).split("=")(1)
+      //      val err2 = err1.substring(0, err1.length - 1).toDouble
+      //  new GenericRowWithSchema(Array(con1, err2),
+      // StructType(Array(StructField("confidence", DoubleType), StructField("error", DoubleType))))
+      var r: Array[String] = row.toString().split(",")
+      var numbers = r(r.length - 1).split("\\s+")
+      numbers(1).split("=")(1).toDouble
 
     })
     val errRdd = df.map((row: Row) => {
@@ -358,7 +397,7 @@ class DataFrame private[sql](@transient val sqlContext: SQLContext,
     //scalastyle:off
     val conMin = conRdd.min()
     val errMin = errRdd.min()
-//    println( conMin + " :con err: " + errMin )
+    //    println( conMin + " :con err: " + errMin )
     // scalastyle:on
 
     (if (currentConfidence < conMin) currentConfidence else conMin,
